@@ -1,2 +1,69 @@
-# ai-barbershop-booking-agent
-Autonomous AI Booking Agent built with n8n and OpenAI Tool Calling for barbershops, featuring slot validation and CRM sync.
+
+# 💈 AI Booking Agent for Barbershop ("Old Money")
+
+Автономный ИИ-ассистент на базе n8n и OpenAI (Tool Calling) для автоматизации входящих обращений и бронирования услуг в барбершопе с синхронизацией с CRM и пуш-уведомлениями администратора.
+
+---
+
+## 📌 Архитектура проекта
+
+Вместо традиционных линейных кнопочных ботов проект использует двухконтурную модель **AI Agent + Tools + Sub-workflow**:
+
+1. **Primary Agent Workflow:** обрабатывает естественный язык, удерживает контекст диалога через буфер памяти, консультирует по услугам и валидирует свободные слоты через вызовы инструментов (Tools).
+2. **Sub-workflow:** изолированный подпроцесс, обеспечивающий атомарность операции: транзакция в базу данных (CRM/MockAPI) + отправка пуш-уведомления администратору в Telegram.
+
+[Пользователь] ───► [Telegram Trigger] ───► [AI Agent (OpenAI GPT-4o)] ◄───► [Memory Buffer]
+│
+├───► [Tool: check_availability] ───► [GET MockAPI (CRM)]
+│
+└───► [Tool: Call Sub-workflow]
+│
+├───► [POST MockAPI (CRM)]
+└───► [Telegram Push Admin]
+
+
+---
+
+## ✨ Ключевые возможности
+
+* **Анализ свободных слотов без галлюцинаций:** инструмент `check_availability` запрашивает актуальный пул броней перед подтверждением слота и сверяет дату с системным временем (`$now`).
+* **Строгая валидация сущностей:** алгоритмический запрет на бронирование до получения 4 обязательных параметров (`client_name`, `client_phone`, `service`, `date_time`).
+* **Нормализация форматов времени:** автоматическая трансформация естественной речи (например, «завтра в 4 дня») в единый стандарт `YYYY-MM-DD HH:00`.
+* **Атомарный Sub-workflow:** гарантия того, что уведомление администратору отправляется только после успешной фиксации записи в CRM.
+
+---
+
+## 🛠 Стек технологий
+
+* **Оркестрация процессов:** n8n
+* **LLM Core:** OpenAI (GPT-4o-mini / GPT-4o) с поддержкой Function Calling
+* **Интерфейс клиента:** Telegram Bot API
+* **Хранилище данных (CRM mock):** MockAPI.io (REST API)
+* **Протоколы интеграции:** Webhooks, REST API, JSON
+
+---
+
+## 📂 Структура репозитория
+
+├── main_agent_workflow.json         # Основной граф агента с инструментами и памятью
+├── sub_workflow_booking_notify.json # Подпроцесс записи в CRM и отправки уведомления
+├── assets/                          # Демонстрационные материалы (видео, скриншоты)
+└── README.md                        # Документация проекта
+
+
+---
+
+## 🚀 Инструкция по развертыванию
+
+1. **Подготовка окружения:**
+   * Создайте Telegram-бота через [@BotFather](https://t.me/BotFather) и сохраните токен.
+   * Узнайте свой Telegram Chat ID через [@userinfobot](https://t.me/userinfobot) (для получения уведомлений).
+   * Создайте ресурс `appointments` на [MockAPI.io](https://mockapi.io/) со схемой: `client_name`, `client_phone`, `service`, `date_time`, `status`.
+
+2. **Импорт в n8n:**
+   * Импортируйте файл `sub_workflow_booking_notify.json`.
+   * В ноде **HTTP Request** укажите ваш URL MockAPI, а в ноде **Telegram** — токен бота и ваш Chat ID. Активируйте сценарий.
+   * Импортируйте файл `main_agent_workflow.json`.
+   * В инструменте вызова воркфлоу выберите импортированный саб-сценарий.
+   * В ноде **OpenAI Chat Model** укажите ваш API-ключ.
+   * Активируйте основной воркфлоу.
