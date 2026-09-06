@@ -1,0 +1,122 @@
+{
+  "name": "Sub-Workflow: Booking & Notify",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "client_name"
+            },
+            {
+              "name": "client_phone"
+            },
+            {
+              "name": "service"
+            },
+            {
+              "name": "date_time"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "120bacb9-24d7-4469-b3a9-c75e2fa5ae7f",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://yourid.mockapi.io/appointments",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"client_name\": \"{{ $json.client_name }}\",\n  \"client_phone\": \"{{ $json.client_phone }}\",\n  \"service\": \"{{ $json.service }}\",\n  \"date_time\": \"{{ $json.date_time }}\",\n  \"status\": \"confirmed\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        224,
+        0
+      ],
+      "id": "1b42c3e3-4539-4a49-a6c1-0efafa295eea",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "chatId": "tgid",
+        "text": "=🔥 **Новая запись!**\n👤 Клиент: {{ $json.client_name }} \n📞 Телефон: {{ $json.client_phone }} \n✂️ Услуга: {{ $json.service }} \n📅 Время: {{ $json.date_time }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        448,
+        0
+      ],
+      "id": "1bd4de16-a699-4ca6-998e-a75fceae3e42",
+      "name": "Send a text message",
+      "webhookId": "db502db3-9efc-4823-a325-7bc07d933f58",
+      "credentials": {
+        "telegramApi": {
+          "id": "Ph1z3D2nfyxaTyPN",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "840fa161-e4b3-4893-82ba-55f6de870d67",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "32a943d5be9a9ad8cf60d285fde54cd2fba2d57940c82c1fd2815fb618fd8b45"
+  },
+  "nodeGroups": [],
+  "id": "PYOj2Ol8UxV49LVC",
+  "tags": []
+}

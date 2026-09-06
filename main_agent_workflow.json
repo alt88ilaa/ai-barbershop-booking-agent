@@ -1,0 +1,286 @@
+{
+  "name": "project2",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        0,
+        0
+      ],
+      "id": "b12a2283-d2a6-4858-b90d-2143f22ddb80",
+      "name": "Telegram Trigger",
+      "webhookId": "976392ee-8dfe-4051-964d-3bdf4851b3f1",
+      "credentials": {
+        "telegramApi": {
+          "id": "Ph1z3D2nfyxaTyPN",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message.text }}",
+        "options": {
+          "systemMessage": "=Ты — вежливый, стильный и лаконичный администратор премиального барбершопа \"Old Money\".\nТвоя задача — консультировать клиентов по услугам, ценам и записывать их на визит.\n\nТЕКУЩЕЕ ВРЕМЯ И ДАТА СИСТЕМЫ: {{ $now }}\n\nНаш прайс-лист:\n1. Мужская стрижка — 2 500 ₽ (мытье головы, стрижка, укладка)\n2. Моделирование бороды — 1 800 ₽ (оформление контуров, бритье опасной бритвой, уход)\n3. Комплекс (Стрижка + Борода) — 3 800 ₽\n4. Камуфляж седины — 1 500 ₽\nГрафик работы барбершопа: с 10:00 до 21:00. Шаг записи — 1 час (10:00, 11:00 и т.д.).\n\nСТАНДАРТ ДАТЫ И ВРЕМЕНИ:\n1. Всегда переводи запрошенное клиентом время в строгий формат: YYYY-MM-DD HH:00 (например, 2026-09-07 16:00). \n2. При вызове инструмента `create_barbershop_appointment` передавай дату СТРОГО в этом отформатированном виде.\n3. При проверке базы через `check_availability` сопоставляй запрошенное время с полем `date_time`.\n\nАЛГОРИТМ БРОНИРОВАНИЯ И ПРОВЕРКИ БАЗЫ:\n1. Прежде чем записать клиента, ОБЯЗАТЕЛЬНО вызови `check_availability`. \n2. Убедись, что время попадает в рабочие часы (10:00 - 21:00).\n3. КРИТИЧЕСКОЕ ПРАВИЛО: Если `check_availability` возвращает пустой список `[]`, строку \"Not found\" или ошибку — это значит, что ВСЕ ВРЕМЯ СВОБОДНО. \n4. Слот считается ЗАНЯТЫМ, ТОЛЬКО если в базе есть точное совпадение по дате и времени. Во ВСЕХ остальных случаях слот СВОБОДЕН. НИКОГДА не отказывай в записи, если нет прямого конфликта.\n5. Если время занято или нерабочее, извинись и предложи ближайшие свободные слоты.\n\nПРАВИЛА ДИАЛОГА И СБОРА ДАННЫХ:\n1. Отвечай вежливо, коротко, в уверенном премиальном тоне.\n2. Для успешной записи тебе требуются СТРОГО 4 параметра: Имя, Номер телефона, Услуга, Дата и Время.\n3. КРИТИЧЕСКИЙ ЗАПРЕТ: НИКОГДА не вызывай `create_barbershop_appointment`, пока не соберешь все 4 параметра. Запрещено придумывать данные.\n4. Если клиент назвал не все данные, вежливо уточни недостающие (например: \"Время свободно. Подскажите ваше имя и номер телефона\").\n5. Вызывай инструмент записи ТОЛЬКО после того, как получишь всю информацию."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        224,
+        0
+      ],
+      "id": "9994268f-1130-44ee-88ec-cc819b0fa872",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        32,
+        304
+      ],
+      "id": "18504060-1d8e-4282-983d-9f929c83d1da",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').item.json.message.chat.id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        176,
+        368
+      ],
+      "id": "74c91b42-dcb4-4971-b752-1edd127151b4",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        592,
+        0
+      ],
+      "id": "40fab4df-dcb6-4f41-b9e5-edca5470cba9",
+      "name": "Send a text message",
+      "webhookId": "c6341f45-4776-42d6-8c5d-12c8dac857fb",
+      "credentials": {
+        "telegramApi": {
+          "id": "Ph1z3D2nfyxaTyPN",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Call this tool to get a list of all existing appointments. \nCRITICAL RULES:\n1. If the tool returns an empty list or nothing, it means the database is completely empty and ALL times are available. \n2. If it returns records, compare the requested date and time with the existing ones. Block the time ONLY if there is an exact match.",
+        "url": "https://yourID.mockapi.io/appointments",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.5,
+      "position": [
+        288,
+        496
+      ],
+      "id": "578c2a96-6c36-4cb5-ac96-fcb7703e1b6c",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "description": "Call this tool ONLY when the client confirms booking an appointment, providing their name, phone number, selected service, and date/time. Creates a new record in the CRM and notifies the admin.",
+        "workflowId": {
+          "__rl": true,
+          "value": "PYOj2Ol8UxV49LVC",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/PYOj2Ol8UxV49LVC",
+          "cachedResultName": "Sub-Workflow: Booking & Notify"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "client_name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('client_name', ``, 'string') }}",
+            "client_phone": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('client_phone', ``, 'string') }}",
+            "service": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('service', ``, 'string') }}",
+            "date_time": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('date_time', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "client_name",
+              "displayName": "client_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "client_phone",
+              "displayName": "client_phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "service",
+              "displayName": "service",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "date_time",
+              "displayName": "date_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        496,
+        240
+      ],
+      "id": "4af1417a-d2f9-45a6-87f8-9f0ef5325c42",
+      "name": "Call 'Sub-Workflow: Booking & Notify'"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        []
+      ]
+    },
+    "Call 'Sub-Workflow: Booking & Notify'": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "3a752526-e72c-455d-806c-a1fae159604e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "32a943d5be9a9ad8cf60d285fde54cd2fba2d57940c82c1fd2815fb618fd8b45"
+  },
+  "nodeGroups": [],
+  "id": "dk3guWs4C3nwlzfX",
+  "tags": []
+}
